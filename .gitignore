@@ -1,0 +1,76 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+bin/default/
+bin/
+gradle/
+target/
+data/
+build/
+.gradle/
+.settings/
+out/
+*.iml
+*.*/*.iml
+
+*.*/*.class
+
+# Ignore the node_modules directory
+node_modules/
+
+# Ignore Logs
+logs/
+*.*/*.log
+*.log
+
+# Ignore the build directory
+dist/
+
+# The file containing environment variables 
+.env
+.metadata/*
+*/.mvn/*
+# Ignore IDE specific files
+.idea/
+.vscode/
+*.sw*
+
+.classpath
+.project
+gradlew
+gradlew.bat
+
+
+
+#execute the command git config --global core.excludesfile ~/.gitignore
