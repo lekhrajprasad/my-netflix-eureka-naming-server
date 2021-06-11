@@ -1,6 +1,3 @@
-def imageName = "lekhrajprasad/my-eureka-server"
-def gitBranch = "master"
-def gitUrl = "https://github.com/lekhrajprasad/my-netflix-eureka-naming-server.git"
 pipeline {
 agent any
 options {
@@ -11,52 +8,67 @@ buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
 environment {
 // Default tool options breaks the pipeline. Removed misbehaving option (Unrecognized VM option 'UseCGroupMemoryLimitForHeap').
 JAVA_TOOL_OPTIONS = '-XX:+UnlockExperimentalVMOptions -Dsun.zip.disableMemoryMapping=true'
+// splunkpath="${config.splunkurl}"
+REPOSITORY_BRANCH="${PULL_REQUEST_FROM_BRANCH}"
+// COMPONENT="${config.serviceName}"
 }
 stages {
 stage('GitClone') {
 steps {
 script {
-checkout([$class: 'GitSCM', branches: [[name: "${gitBranch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'gitaccess', url: "${gitUrl}"]]])
+String payload = "${payload}"
+jsonObject = readJSON text: payload
+gitHash = "${jsonObject.pull_request.head.sha}"
+String gitUrl = "${jsonObject.repository.clone_url}"
+checkout([$class: 'GitSCM', branches: [[name: "${gitHash}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'gitaccess', url: "${gitUrl}"]]])
 }
 }
 }
-stage('Versioning') {
-steps {
-script {
-version_parser = readMavenPom file: './pom.xml'
-version = "${version_parser.version}"
-}
-}
-}
-stage('Build Image') {
+stage('Get Dependencies') {
 steps {
 script {
 sh """
-docker build -t "${imageName}" .
+mvn clean compile
 """
 }
 }
 }
-stage('Re-tag image') {
+stage('Unit Test') {
 steps {
 script {
 sh """
-docker tag "${imageName}" "${imageName}:${version}"
+mvn test
 """
 }
 }
 }
-stage('Image Push to Dockerhub') {
+stage('CodeQuality') {
 steps {
 script {
-// This step should not normally be used in your script. Consult the inline help for details.
-withDockerRegistry(credentialsId: 'dockerhub') {
+// -Dsonar.login=9d0d4dbbe11657dfb68c5d73dab4884176b3a72c
+withSonarQubeEnv(credentialsId: 'sonar-access-token') {
+// some block
 sh """
-docker push "${imageName}"
-docker push "${imageName}:${version}"
+sonar-scanner \
+-Dsonar.projectKey="my-pr" \
+-Dsonar.java.binaries="./target/classes" \
+-Dsonar.sources="." \
+-Dsonar.host.url="http://54.175.47.141" \
+-Dsonar.branch.target="master"
 """
 }
 }
+}
+}
+stage("Quality Gate") {
+options {
+timeout(time: 10, unit: 'MINUTES')
+}
+steps {
+sleep(60)
+// Parameter indicates whether to set pipeline to UNSTABLE if Quality Gate fails
+// true = set pipeline to UNSTABLE, false = don't
+waitForQualityGate abortPipeline: true
 }
 }
 }
